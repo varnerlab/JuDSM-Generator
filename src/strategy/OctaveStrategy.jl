@@ -76,6 +76,50 @@ function build_copyright_header_buffer(problem_object::ProblemObject)
   return buffer
 end
 
+function build_default_flux_bounds(problem_object::ProblemObject)
+
+  # get the comment buffer -
+  comment_header_dictionary = problem_object.configuration_dictionary["function_comment_dictionary"]["data_dictionary_function"]
+  function_comment_buffer = build_function_header_buffer(comment_header_dictionary)
+
+  # Get the default -
+  default_parameter_dictionary = problem_object.configuration_dictionary["default_parameter_dictionary"]
+  enzyme_initial_condition = parse(Float64,default_parameter_dictionary["default_protein_initial_condition"])
+  default_saturation_constant = default_parameter_dictionary["default_saturation_constant"]
+  default_protein_half_life = parse(Float64,default_parameter_dictionary["default_protein_half_life"])
+  default_rate_constant = parse(Float64,default_parameter_dictionary["default_enzyme_kcat"])
+  default_number_of_feed_streams = parse(Int,default_parameter_dictionary["default_number_of_feed_streams"])
+  default_upper_bound = default_rate_constant*enzyme_initial_condition
+
+  # initialize the buffer -
+  buffer = ""
+
+  # open -
+  buffer *= "\tdefault_bounds_array = [\n"
+
+  # Grab the list of reactions -
+  list_of_reactions::Array{ReactionObject} = problem_object.list_of_reactions
+  counter = 1
+  for (index,reaction_object) in enumerate(list_of_reactions)
+
+    if (is_enzyme_degradation_reaction(reaction_object) == false)
+
+      # Generate the comment string -
+      comment_string = build_reaction_comment_string(reaction_object)
+
+      # build bounds record -
+      buffer *= "\t\t0\t$(default_upper_bound)\t;\t% $(counter) $(comment_string)\n"
+
+      # update counter -
+      counter = counter + 1
+
+    end
+  end
+
+  # close -
+  buffer *= "\t];\n"
+end
+
 function build_data_dictionary_buffer(problem_object::ProblemObject,solver_option::Symbol,reactor_option::Symbol)
 
   filename = "DataDictionary.m"
@@ -95,8 +139,6 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   default_rate_constant = parse(Float64,default_parameter_dictionary["default_enzyme_kcat"])
   default_number_of_feed_streams = parse(Int,default_parameter_dictionary["default_number_of_feed_streams"])
   default_upper_bound = default_rate_constant*enzyme_initial_condition
-
-  @show default_upper_bound,default_rate_constant,enzyme_initial_condition
 
   #
 
@@ -125,17 +167,16 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   counter = 1
   for (index,species_object) in enumerate(list_of_species)
 
-    compartment_symbol::Symbol = species_object.species_compartment
+    species_bound_type::Symbol = species_object.species_bound_type
     species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
 
-    if (species_type == :metabolite)
-      species_symbol = species_object.species_symbol
+    if (species_type == :metabolite && species_bound_type == :free)
       buffer *= "\t\t0.0\t;\t% $(counter) $(index) $(species_symbol)\t(units: mM)\n"
       counter = counter + 1
     end
 
     if (species_type == :enzyme)
-      species_symbol = species_object.species_symbol
       buffer *= "\t\t$(enzyme_initial_condition)\t;\t% $(counter) $(index) $(species_symbol)\t(units: mM)\n"
       counter = counter + 1
     end
@@ -156,6 +197,7 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   for (index,reaction_object) in enumerate(list_of_reactions)
 
     reaction_string = reaction_object.reaction_name
+    reaction_type = reaction_object.reaction_type
 
     # Build comment string -
     comment_string = build_reaction_comment_string(reaction_object)
@@ -168,8 +210,7 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
 
       # Build buffer -
       buffer *= "\t\t$(default_rate_constant)\t;\t% $(index)\t(units: 1/min)\t$(reaction_string)::$(comment_string)\n"
-    else
-
+    elseif (reaction_type == :kinetic)
       # Build the buffer -
       buffer *= "\t\t$(default_rate_constant)\t;\t% $(index)\t(units: 1/min)\t$(reaction_string)::$(comment_string)\n"
     end
@@ -271,20 +312,31 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
 
       # what is the species symbol?
       species_symbol = species_object.species_symbol
+      species_bound_type = species_object.species_bound_type
+      species_type = species_object.species_type
 
-      for feed_stream_index = 1:number_of_feed_streams
+      if (species_bound_type == :measured && species_type == :metabolite)
 
-          buffer *= " 0.0 "
+        for feed_stream_index = 1:number_of_feed_streams
+            buffer *= " 0.0 "
+        end
+
+        buffer *= "\t;\t% $(index) $(species_symbol) (units: mM)\n"
+        buffer *= "\t"
+
       end
-
-      buffer *= "\t;\t% $(index) $(species_symbol) (units: mM)\n"
-      buffer *= "\t"
-
     end
 
 
     buffer *= "];\n"
   end
+
+  # generate bounds array -
+  buffer *= "\n"
+  buffer *= "\t% Setup default bounds array - \n"
+  default_bounds_array = build_default_flux_bounds(problem_object)
+  buffer *= default_bounds_array
+  buffer *= "\n"
 
   buffer *= "\n"
   buffer *= "\t% =============================== DO NOT EDIT BELOW THIS LINE ============================== %\n"
@@ -310,6 +362,7 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
     buffer *= "\tdata_dictionary.control_parameter_array = control_parameter_array;\n"
   end
 
+  buffer *= "\tdata_dictionary.default_flux_bounds_array = default_bounds_array;\n"
   buffer *= "\t% =============================== DO NOT EDIT ABOVE THIS LINE ============================== %\n"
   buffer *= "return\n"
 
@@ -441,9 +494,6 @@ function build_control_buffer(problem_object::ProblemObject)
 
       # Get reaction name -
       local_reaction_name = reaction_object.reaction_name
-
-      @show reaction_object
-
       if (in(local_reaction_name,controlled_reaction_set) == true)
 
         buffer *= "\ttransfer_function_buffer = [];\n"
@@ -604,8 +654,6 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
     reaction_type::Symbol = reaction_object.reaction_type
     reaction_name::AbstractString = reaction_object.reaction_name
     enyzme_generation_flag = reaction_object.enyzme_generation_flag
-
-    @show reaction_name,enyzme_generation_flag
 
     # ok, write the start -
     buffer *= "\t% $(index) $(comment_string)\n"

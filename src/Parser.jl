@@ -18,6 +18,7 @@ function parse_vff_measured_species_statements(path_to_model_file::AbstractStrin
       end
     end
 
+    counter = 1
     for sentence in tmp_array
 
       # Check the current pragma -
@@ -31,7 +32,11 @@ function parse_vff_measured_species_statements(path_to_model_file::AbstractStrin
       if (current_handler_symbol == desired_handler_symbol && contains(sentence,"#pragma") == false)
 
         measured_species_object = vff_measured_species_object_factory(sentence,current_handler_symbol)
+        measured_species_object.species_index = counter
         push!(measured_species_vector,measured_species_object)
+
+        # Update the counter -
+        counter = counter + 1
       end
     end
 
@@ -167,8 +172,6 @@ function parse_vff_metabolic_statements(path_to_model_file::AbstractString)
       if (current_handler_symbol == desired_handler_symbol && contains(sentence,"#pragma") == false)
 
         local_vff_sentence_array = vff_metabolic_sentence_factory(sentence,current_handler_symbol)
-        @show local_vff_sentence_array
-
         for local_vff_sentence in collect(local_vff_sentence_array)
           push!(expanded_sentence_vector,local_vff_sentence)
         end

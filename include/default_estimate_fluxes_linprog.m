@@ -8,7 +8,7 @@ function convex_flux_array = estimate_convex_fluxes(t,x,kinetic_flux_array,data_
 	objective_vector = data_dictionary.objective_coefficient_array;
 
 	% Get bounds from the data_dictionary -
-	vb = data_dictionary.default_flux_bounds;
+	vb = data_dictionary.default_flux_bounds_array;
 	LB = vb(:,1);
 	UB = vb(:,2);
 

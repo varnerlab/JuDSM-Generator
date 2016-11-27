@@ -138,6 +138,70 @@ function transfer_distribution_files(path_to_distribution_files::AbstractString,
   end
 end
 
+function update_reaction_list!(list_of_reactions::Array{ReactionObject},
+  list_of_target_species::Array{SpeciesObject},
+  target_bound_symbol::Symbol)
+
+  # Create a set of free species symbols -
+  set_target_species_symbol = Set{String}()
+  for (index,target_species_object) in enumerate(list_of_target_species)
+
+    # Grab the symbol -
+    species_symbol = target_species_object.species_symbol
+    push!(set_target_species_symbol,species_symbol)
+  end
+
+  # Iterate -
+  for (index,reaction_object) in enumerate(list_of_reactions)
+
+    # grab the reactants -
+    list_of_reactants::Array{SpeciesObject} = reaction_object.list_of_reactants
+    for (reactant_index,reactant_object) in enumerate(list_of_reactants)
+
+      # Get the symbol for the reactants -
+      reactant_symbol = reactant_object.species_symbol
+      if (in(reactant_symbol,set_target_species_symbol) == true)
+        reactant_object.species_bound_type = target_bound_symbol
+      end
+    end
+
+    # grab the products -
+    list_of_products::Array{SpeciesObject} = reaction_object.list_of_products
+    for (product_index,product_object) in enumerate(list_of_products)
+
+      # Get the symbol for the reactants -
+      product_symbol = product_object.species_symbol
+      if (in(product_symbol,set_target_species_symbol) == true)
+        product_object.species_bound_type = target_bound_symbol
+      end
+    end
+  end
+end
+
+function classify_species_bounds!(list_of_species::Array{SpeciesObject},
+  list_of_target_species::Array{SpeciesObject},
+  target_bound_symbol::Symbol)
+
+  # Create a set of free species symbols -
+  set_target_species_symbol = Set{String}()
+  for (index,target_species_object) in enumerate(list_of_target_species)
+
+    # Grab the symbol -
+    species_symbol = target_species_object.species_symbol
+    push!(set_target_species_symbol,species_symbol)
+  end
+
+  # iterate -
+  for (index,local_species_object) in enumerate(list_of_species)
+
+    # what is species symbol -
+    local_species_symbol = local_species_object.species_symbol
+    if (in(local_species_symbol,set_target_species_symbol) == true)
+      local_species_object.species_bound_type = target_bound_symbol
+    end
+  end
+end
+
 function partition!(list_of_reactions::Array{ReactionObject})
 
   # ok, we need to split the reaction list into solved and kinetic -
@@ -146,12 +210,13 @@ function partition!(list_of_reactions::Array{ReactionObject})
 
   for (index,reaction_object) in enumerate(list_of_reactions)
 
-    is_kinetic_reaction::Bool = true
+    is_kinetic_reaction::Bool = false
 
     # get the list of reactants -
     list_of_reactants::Array{SpeciesObject} = reaction_object.list_of_reactants
     for (local_index,species_object::SpeciesObject) in enumerate(list_of_reactants)
-      if (species_object.species_compartment == :unbalanced)
+
+      if (species_object.species_bound_type == :free)
           is_kinetic_reaction = true
       end
     end
@@ -189,20 +254,24 @@ function partition!(list_of_species::Array{SpeciesObject})
 
   # ok, frist, we need to split into balanced and unbalanced lists -
   list_of_balanced_indexes::Array{Int} = Int[]
-  list_of_unbalanced_indexes::Array{Int} = Int[]
+  list_of_measured_indexes::Array{Int} = Int[]
+  list_of_free_indexes::Array{Int} = Int[]
 
   for (index,species_object) in enumerate(list_of_species)
 
-    species_compartment::Symbol = species_object.species_compartment
-    if (species_compartment == :balanced)
+    # what is bounds symbol -
+    species_bound_type::Symbol = species_object.species_bound_type
+    if (species_bound_type == :balanced)
       push!(list_of_balanced_indexes,index)
-    elseif (species_compartment == :unbalanced)
-      push!(list_of_unbalanced_indexes,index)
+    elseif (species_bound_type == :measured)
+      push!(list_of_measured_indexes,index)
+    elseif (species_bound_type == :free)
+      push!(list_of_free_indexes,index)
     end
   end
 
   # combine -
-  permutation_index_array = vcat(list_of_balanced_indexes,list_of_unbalanced_indexes)
+  permutation_index_array = vcat(list_of_balanced_indexes,list_of_measured_indexes,list_of_free_indexes)
 
   # permute the array -
   permute!(list_of_species,permutation_index_array)

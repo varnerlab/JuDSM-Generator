@@ -1,5 +1,7 @@
 function generate_problem_object(metabolic_statement_vector::Array{VFFSentence},
-  control_sentence_vector::Array{VFFControlSentence})
+  control_sentence_vector::Array{VFFControlSentence},
+  measured_species_vector::Array{SpeciesObject},
+  free_species_vector::Array{SpeciesObject})
 
   # Initilize an empty problem object -
   problem_object::ProblemObject = ProblemObject()
@@ -7,8 +9,19 @@ function generate_problem_object(metabolic_statement_vector::Array{VFFSentence},
   # construct the array of species -
   species_array::Array{SpeciesObject} = build_species_list(metabolic_statement_vector)
 
+  # classify bounds -
+  classify_species_bounds!(species_array,measured_species_vector,:measured)
+  classify_species_bounds!(species_array,free_species_vector,:free)
+
+  # Partition species -
+  partition!(species_array)
+
   # construct the array of reactions -
   reaction_array::Array{ReactionObject} = build_reaction_list(metabolic_statement_vector)
+
+  # Correct species in reactions -
+  update_reaction_list!(reaction_array,measured_species_vector,:measured)
+  update_reaction_list!(reaction_array,free_species_vector,:free)
 
   # Add enzymes to species array -
   append_enzymes_to_species_list!(species_array,metabolic_statement_vector)
@@ -18,7 +31,10 @@ function generate_problem_object(metabolic_statement_vector::Array{VFFSentence},
 
   # partition the reactions -
   partition!(reaction_array)
-  @show size(reaction_array)
+
+  # for (index,species_object) in enumerate(species_array)
+  #   @show species_object
+  # end
 
   # set data on problem_object -
   problem_object.list_of_species = species_array
@@ -60,6 +76,7 @@ function append_enzyme_degradation_to_reaction_list!(list_of_reactions::Array{Re
       enzyme_object::SpeciesObject = SpeciesObject()
       enzyme_object.species_type = :enzyme
       enzyme_object.species_compartment = :unbalanced
+      enzyme_object.species_bound_type = :free
       enzyme_object.stoichiometric_coefficient = 1.0
       enzyme_object.species_symbol = "E_$(reaction_name)"
 
@@ -79,6 +96,7 @@ function append_enzyme_degradation_to_reaction_list!(list_of_reactions::Array{Re
       # add -
       degradation_reaction.list_of_reactants = list_of_reactants
       degradation_reaction.list_of_products = list_of_products
+      degradation_reaction.reaction_type = :enzyme_degradation
 
       # Add to list of reactions -
       push!(list_of_reactions,degradation_reaction)
@@ -107,7 +125,8 @@ function append_enzymes_to_species_list!(list_of_species::Array{SpeciesObject},l
       # create an enzyme -
       enzyme_object::SpeciesObject = SpeciesObject()
       enzyme_object.species_type = :enzyme
-      enzyme_object.species_compartment = :unbalanced
+      enzyme_object.species_compartment = :reactor
+      enzyme_object.species_bound_type = :free
       enzyme_object.species_symbol = "E_$(reaction_name)"
 
       # add to species list -
@@ -202,9 +221,10 @@ function build_species_list!(reaction_clause::AbstractString,list_of_species::Ar
         # Build the species object -
         species_object.species_index = 0.0
         species_object.species_type = :metabolite
+        species_object.species_bound_type = :balanced
         species_object.species_symbol = symbol
         species_object.stoichiometric_coefficient = parse(Float64,coefficient)
-        species_object.species_compartment = :unbalanced
+        species_object.species_compartment = :reactor
 
         # add to list -
         push!(list_of_species,species_object)
@@ -219,9 +239,10 @@ function build_species_list!(reaction_clause::AbstractString,list_of_species::Ar
         # Build the species object -
         species_object.species_index = 0.0
         species_object.species_type = :metabolite
+        species_object.species_bound_type = :balanced
         species_object.species_symbol = symbol
         species_object.stoichiometric_coefficient = coefficient
-        species_object.species_compartment = :unbalanced
+        species_object.species_compartment = :reactor
 
         # add to list -
         push!(list_of_species,species_object)
@@ -234,8 +255,6 @@ function build_species_list(statement_vector::Array{VFFSentence})
 
   species_set::Set{AbstractString} = Set{AbstractString}()
   for vff_sentence in statement_vector
-
-    @show vff_sentence
 
     # grab the handler -
     handler_symbol = vff_sentence.sentence_handler
@@ -284,7 +303,8 @@ function build_species_list(statement_vector::Array{VFFSentence})
     species_object.species_index = index
     species_object.stoichiometric_coefficient = 0.0
     species_object.species_type = :metabolite
-    species_object.species_compartment = :unbalanced
+    species_object.species_bound_type = :balanced
+    species_object.species_compartment = :reactor
 
     # push -
     push!(list_of_species,species_object)
@@ -292,7 +312,7 @@ function build_species_list(statement_vector::Array{VFFSentence})
 
   # Super finally ... we need to sort this list of species objects, alphbetical and by compartment.
   # Balanced | Unbalanced -
-  partition!(list_of_species)
+  # partition!(list_of_species)
 
   # return my sorted list of species objects -
   return list_of_species

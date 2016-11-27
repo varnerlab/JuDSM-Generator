@@ -54,7 +54,7 @@ function main()
   free_species_vector::Array{SpeciesObject} = parse_vff_free_species_statements(path_to_model_file)
 
   # Generate the problem object -
-  problem_object = generate_problem_object(metabolic_statement_vector,control_statement_vector)
+  problem_object = generate_problem_object(metabolic_statement_vector,control_statement_vector,measured_species_vector,free_species_vector)
 
   # Load the JSON configuration file -
   config_dict = JSON.parsefile("./config/Configuration.json")
