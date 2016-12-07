@@ -72,6 +72,7 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
   % Get volume, and flow rate array -
   initial_volume = data_dictionary.initial_volume;
   volumetric_flow_array = data_dictionary.volumetric_flowrate_array;
+  volumetric_flow_array = interp1(volumetric_flow_array(:,1),volumetric_flow_array(:,2:end),simulation_time_array);
 
   % initialize the volume array -
   volume_archive = zeros(number_of_timesteps+1,1);
@@ -81,7 +82,7 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
   update_archive(state_archive,initial_condition_array,1);
 
   % Compute the initial flux and update the flux_archive -
-  initial_flux_array = Kinetics(0.0,initial_condition_array,data_dictionary);
+  initial_flux_array = Kinetics(0.0,initial_condition_array,initial_volume,data_dictionary);
   update_archive(flux_archive,initial_flux_array,1);
 
   % Main simulation loop -
@@ -93,14 +94,17 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
     % current state -
     current_state_array = state_archive(time_step_index,:);
 
+    % current volume -
+    current_volume = volume_archive(time_step_index,1);
+
     % compute the kinetics -
-    flux_array = Kinetics(time_value,current_state_array,data_dictionary);
+    flux_array = Kinetics(time_value,current_state_array,current_volume,data_dictionary);
 
     % compute the dilution terms -
-    dilution_array = Dilution(time_value,time_step_index,current_state_array,volume,data_dictionary);
+    dilution_array = Dilution(time_value,current_state_array,current_volume,data_dictionary);
 
     % update the state -
-    next_state_array = current_state_array + time_step*(STM*flux_array+dilution_array);
+    next_state_array = current_state_array + time_step*(stoichiometric_matrix*flux_array+dilution_array);
 
     % update the state_archive -
     update_archive(state_archive,next_state_array,time_step_index+1);
@@ -109,9 +113,7 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
     update_archive(flux_archive,flux_array,time_step_index+1);
 
     % Update the volume archive -
-    next_volume = volume + time_step*volumetric_flow_array(time_step_index);
-    volume_archive(time_step_index+1,1) = next_volume;
-    volume = next_volume;
+    volume_archive(time_step_index+1,1) = current_volume + time_step*volumetric_flow_array(time_step_index);
   end
 
 % return -

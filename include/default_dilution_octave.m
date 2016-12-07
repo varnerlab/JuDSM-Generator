@@ -1,7 +1,4 @@
-function species_dilution_array = Dilution(t,x,data_dictionary)
-
-  % volume is the last species -
-  volume = x(end);
+function species_dilution_array = Dilution(t,x,volume,data_dictionary)
 
   % How many species do we have?
   number_of_species = length(x);

@@ -1,4 +1,4 @@
-function convex_flux_array = estimate_convex_fluxes(t,x,kinetic_flux_array,data_dictionary)
+function convex_flux_array = estimate_convex_fluxes(t,x,volume,kinetic_flux_array,data_dictionary)
 
 	% What is my measurement tolerance?
 	epsilon = 0.10;
@@ -14,7 +14,7 @@ function convex_flux_array = estimate_convex_fluxes(t,x,kinetic_flux_array,data_
 	measurement_array_block = data_dictionary.experimental_data_array;
 
 	% Call the dilution function -
-	species_dilution_array = Dilution(t,x,data_dictionary);
+	species_dilution_array = Dilution(t,x,volume,data_dictionary);
 
 	% Formulate objective vector (default is to minimize fluxes)
 	objective_vector = data_dictionary.objective_coefficient_array;
@@ -40,7 +40,7 @@ function convex_flux_array = estimate_convex_fluxes(t,x,kinetic_flux_array,data_
 	number_of_measured_species = length(index_vector_measured_species);
 
 	% Get the STM associated w/the measured species -
- 	measured_stm_block = STM(index_vector_measured_species,index_vector_convex_species);
+ 	measured_stm_block = STM(index_vector_measured_species,index_vector_convex_rates);
 	A = [
 		measured_stm_block 			;	% upper bound
 		-1*measured_stm_block		;	% lower bound
@@ -67,6 +67,12 @@ function convex_flux_array = estimate_convex_fluxes(t,x,kinetic_flux_array,data_
 		upper_ineq		;	% upper bounds
 		-1*lower_ineq	;	% lower bounds
 	];
+	% ============================================================================== %
+
+	% = FLUX BOUNDS ================================================================ %
+	default_bounds_array = data_dictionary.default_flux_bounds_array;
+	LB = default_bounds_array(:,1);
+	UB = default_bounds_array(:,2);
 	% ============================================================================== %
 
 	% What are my options?

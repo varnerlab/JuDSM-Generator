@@ -414,8 +414,32 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   buffer *= "\t];\n"
   buffer *= "\n"
 
+  buffer *= "\t% Setup index array of kinetic rates (calculated in Kinetics) - \n"
+  buffer *= "\tindex_vector_kinetic_rates = [\n";
+
+  # What species are calculated? ()
+  counter = 1
+  for (index,reaction_object) in enumerate(list_of_reactions)
+
+    reaction_string = reaction_object.reaction_name
+    reaction_type = reaction_object.reaction_type
+
+    # Build comment string -
+    comment_string = build_reaction_comment_string(reaction_object)
+
+    # all reactions that are *not* kientic, or enzyme degradation?
+    if (is_enzyme_degradation_reaction(reaction_object) == true && reaction_type == :kinetic)
+      buffer *= "\t\t$(counter)\t;\t% $(reaction_string)::$(comment_string)\n"
+    end
+
+    # update the counter -
+    counter = counter + 1;
+  end
+
+  buffer *= "\t];\n"
   buffer *= "\n"
-  buffer *= "\t% Setup index array of convex rates (balanced) - \n"
+
+  buffer *= "\t% Setup index array of convex rates (calculated by the LP) - \n"
   buffer *= "\tindex_vector_convex_rates = [\n";
 
   # What species are calculated? ()
@@ -518,6 +542,7 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   buffer *= "\tdata_dictionary.stoichiometric_matrix = stoichiometric_matrix;\n"
   buffer *= "\tdata_dictionary.index_vector_convex_species = index_vector_convex_species;\n"
   buffer *= "\tdata_dictionary.index_vector_convex_rates = index_vector_convex_rates;\n"
+  buffer *= "\tdata_dictionary.index_vector_kinetic_rates = index_vector_kinetic_rates;\n"
   buffer *= "\tdata_dictionary.index_vector_measured_species = index_vector_measured_species;\n"
   buffer *= "\tdata_dictionary.index_vector_free_species = index_vector_free_species;\n"
   buffer *= "\tdata_dictionary.objective_coefficient_array = objective_coefficient_array;\n"
@@ -778,17 +803,17 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
   buffer *= header_buffer
   buffer *= "%\n"
   buffer *= function_comment_buffer
-  buffer *= "function flux_array = Kinetics(t,x,data_dictionary)\n"
-  buffer *= "\tflux_array = calculate_flux_array(t,x,data_dictionary);\n"
+  buffer *= "function flux_array = Kinetics(t,x,volume,data_dictionary)\n"
+  buffer *= "\tflux_array = calculate_flux_array(t,x,volume,data_dictionary);\n"
   buffer *= "return\n"
   buffer *= "\n"
-  buffer *= "function flux_array = calculate_flux_array(t,x,data_dictionary)\n"
+  buffer *= "function flux_array = calculate_flux_array(t,x,volume,data_dictionary)\n"
   buffer *= "\n"
   buffer *= "\t% Estimate the kinetic fluxes - \n"
   buffer *= "\tkinetic_flux_array = estimate_kinetic_fluxes(t,x,data_dictionary);\n"
   buffer *= "\n"
   buffer *= "\t% Estimate the steady-state fluxes - \n"
-  buffer *= "\tconvex_flux_array = estimate_convex_fluxes(t,x,kinetic_flux_array,data_dictionary);\n"
+  buffer *= "\tconvex_flux_array = estimate_convex_fluxes(t,x,volume,kinetic_flux_array,data_dictionary);\n"
   buffer *= "\n"
   buffer *= "\t% Concatenate and return - \n"
   buffer *= "\tflux_array = [convex_flux_array ; kinetic_flux_array];\n"
