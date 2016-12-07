@@ -102,7 +102,10 @@ function build_default_flux_bounds(problem_object::ProblemObject)
   counter = 1
   for (index,reaction_object) in enumerate(list_of_reactions)
 
-    if (is_enzyme_degradation_reaction(reaction_object) == false)
+    reaction_string = reaction_object.reaction_name
+    reaction_type = reaction_object.reaction_type
+
+    if (is_enzyme_degradation_reaction(reaction_object) == false && reaction_type != :kinetic)
 
       # Generate the comment string -
       comment_string = build_reaction_comment_string(reaction_object)
@@ -156,7 +159,6 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   if (reactor_option == :F)
     buffer *= "\t% Augment the stoichiometric matrix w/volume row (row of zeros) - \n"
     buffer *= "\t[number_of_rows,number_of_cols] = size(stoichiometric_matrix);\n"
-    buffer *= "\tstoichiometric_matrix = [stoichiometric_matrix ; zeros(1,number_of_cols)];\n"
     buffer *= "\n"
   end
 
@@ -182,13 +184,15 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
     end
   end
 
-  # Check for reactor type -
-  if (reactor_option == :F)
-    buffer *= "\t\t1.0\t;\t% $(counter) Volume\t(units: L)\n"
-  end
-
   buffer *= "\t];\n"
   buffer *= "\n"
+
+  # Check for reactor type -
+  if (reactor_option == :F)
+    buffer *= "\t% Initial reactor volume - \n"
+    buffer *= "\tinitial_volume = 1.0\t;\t% $(counter) Volume\t(units: L)\n"
+    buffer *= "\n"
+  end
 
 
   list_of_reactions::Array{ReactionObject} = problem_object.list_of_reactions
@@ -292,22 +296,28 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
 
 
     # Write the buffer -
+    default_values_dictionary = problem_object.configuration_dictionary["default_parameter_dictionary"]
+
     buffer *= "\t% How many feeds do we have?\n"
     buffer *= "\tnumber_of_reactor_feed_streams = $(number_of_feed_streams);\n"
     buffer *= "\n"
     buffer *= "\t% Setup the volumetric_flowrate_array (units: L/min) - \n"
-    buffer *= "\tvolumetric_flowrate_array = [];\n"
+    buffer *= "\tvolumetric_flowrate_array = load('$(default_values_dictionary["default_volumetric_flowrate_array"])');\n"
+    buffer *= "\n"
+    buffer *= "\t% load the experimental_data_array - \n"
+    buffer *= "\texperimental_data_array = load('$(default_values_dictionary["default_experimental_data_array"])');\n"
     buffer *= "\n"
     buffer *= "\t% Setup the feed concentrations - \n"
     buffer *= "\tmaterial_feed_concentration_array = [\n"
-    buffer *= "\t"
-    buffer *= "%"
+    buffer *= "\t\n"
+    buffer *= "\t%"
     for feed_stream_index = 1:number_of_feed_streams
       buffer *= " F$(feed_stream_index)  "
     end
     buffer *= "\n"
     buffer *= "\t"
 
+    counter::Int = 1
     for (index,species_object) in enumerate(list_of_species)
 
       # what is the species symbol?
@@ -315,18 +325,60 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
       species_bound_type = species_object.species_bound_type
       species_type = species_object.species_type
 
-      if (species_bound_type == :measured && species_type == :metabolite)
+      if (species_type == :metabolite && species_bound_type == :free)
 
         for feed_stream_index = 1:number_of_feed_streams
             buffer *= " 0.0 "
         end
 
-        buffer *= "\t;\t% $(index) $(species_symbol) (units: mM)\n"
+        buffer *= "\t;\t% $(counter) $(index) $(species_symbol) (units: mM)\n"
         buffer *= "\t"
 
+        counter = counter + 1;
       end
     end
 
+    buffer *= "\n\t"
+    for (index,species_object) in enumerate(list_of_species)
+
+      # what is the species symbol?
+      species_symbol = species_object.species_symbol
+      species_bound_type = species_object.species_bound_type
+      species_type = species_object.species_type
+
+      if (species_type == :enzyme && species_bound_type == :free)
+
+        for feed_stream_index = 1:number_of_feed_streams
+            buffer *= " 0.0 "
+        end
+
+        buffer *= "\t;\t% $(counter) $(index) $(species_symbol) (units: mM)\n"
+        buffer *= "\t"
+
+        counter = counter + 1;
+      end
+    end
+
+    buffer *= "\n\t"
+    for (index,species_object) in enumerate(list_of_species)
+
+      # what is the species symbol?
+      species_symbol = species_object.species_symbol
+      species_bound_type = species_object.species_bound_type
+      species_type = species_object.species_type
+
+      if (species_type == :metabolite && species_bound_type == :measured)
+
+        for feed_stream_index = 1:number_of_feed_streams
+            buffer *= " 0.0 "
+        end
+
+        buffer *= "\t;\t% $(counter) $(index) $(species_symbol) (units: mM)\n"
+        buffer *= "\t"
+
+        counter = counter + 1;
+      end
+    end
 
     buffer *= "];\n"
   end
@@ -339,16 +391,144 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   buffer *= "\n"
 
   buffer *= "\n"
+  buffer *= "\t% Setup index array of convex species (balanced) - \n"
+  buffer *= "\tindex_vector_convex_species = [\n";
+
+  # What species are conex (bounded)?
+  counter = 1
+  for (index,species_object) in enumerate(list_of_species)
+
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_bound_type == :balanced)
+      buffer *= "\t\t$(counter)\t;\t%\t$(species_symbol)\n"
+    end
+
+    # update the counter -
+    counter = counter + 1
+
+  end
+
+  buffer *= "\t];\n"
+  buffer *= "\n"
+
+  buffer *= "\n"
+  buffer *= "\t% Setup index array of convex rates (balanced) - \n"
+  buffer *= "\tindex_vector_convex_rates = [\n";
+
+  # What species are calculated? ()
+  counter = 1
+  for (index,reaction_object) in enumerate(list_of_reactions)
+
+    reaction_string = reaction_object.reaction_name
+    reaction_type = reaction_object.reaction_type
+
+    # Build comment string -
+    comment_string = build_reaction_comment_string(reaction_object)
+
+    # all reactions that are *not* kientic, or enzyme degradation?
+    if (is_enzyme_degradation_reaction(reaction_object) == false && reaction_type != :kinetic)
+      buffer *= "\t\t$(counter)\t;\t% $(reaction_string)::$(comment_string)\n"
+    end
+
+    # update the counter -
+    counter = counter + 1;
+  end
+
+  buffer *= "\t];\n"
+  buffer *= "\n"
+
+  buffer *= "\t% Setup index array of measured species (balanced) - \n"
+  buffer *= "\tindex_vector_measured_species = [\n";
+
+  # What species are measured?
+  counter = 1
+  for (index,species_object) in enumerate(list_of_species)
+
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_bound_type == :measured)
+      buffer *= "\t\t$(counter)\t;\t%\t$(species_symbol)\n"
+    end
+
+    # update the counter -
+    counter = counter + 1
+
+  end
+
+  buffer *= "\t];\n"
+  buffer *= "\n"
+
+  buffer *= "\t% Setup index array of free species - \n"
+  buffer *= "\tindex_vector_free_species = [\n";
+
+  # What species are measured?
+  counter = 1
+  for (index,species_object) in enumerate(list_of_species)
+
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_bound_type == :free)
+      buffer *= "\t\t$(counter)\t;\t%\t$(species_symbol)\n"
+    end
+
+    # update the counter -
+    counter = counter + 1
+
+  end
+
+  buffer *= "\t];\n"
+  buffer *= "\n"
+
+  buffer *= "\t% Setup the objective coefficient array - \n"
+  buffer *= "\tobjective_coefficient_array = [\n";
+
+  # What species are calculated? ()
+  counter = 1
+  for (index,reaction_object) in enumerate(list_of_reactions)
+
+    reaction_string = reaction_object.reaction_name
+    reaction_type = reaction_object.reaction_type
+
+    # Build comment string -
+    comment_string = build_reaction_comment_string(reaction_object)
+
+    # all reactions that are *not* kientic, or enzyme degradation?
+    if (is_enzyme_degradation_reaction(reaction_object) == false && reaction_type != :kinetic)
+      buffer *= "\t\t0.0\t;\t% $(counter) $(reaction_string)::$(comment_string)\n"
+    end
+
+    # update the counter -
+    counter = counter + 1;
+  end
+
+  buffer *= "\t];\n"
+
+  buffer *= "\n"
   buffer *= "\t% =============================== DO NOT EDIT BELOW THIS LINE ============================== %\n"
   buffer *= "\tdata_dictionary = [];\n"
   buffer *= "\tdata_dictionary.initial_condition_array = initial_condition_array;\n"
   buffer *= "\tdata_dictionary.total_number_of_states = length(initial_condition_array);\n"
   buffer *= "\tdata_dictionary.stoichiometric_matrix = stoichiometric_matrix;\n"
+  buffer *= "\tdata_dictionary.index_vector_convex_species = index_vector_convex_species;\n"
+  buffer *= "\tdata_dictionary.index_vector_convex_rates = index_vector_convex_rates;\n"
+  buffer *= "\tdata_dictionary.index_vector_measured_species = index_vector_measured_species;\n"
+  buffer *= "\tdata_dictionary.index_vector_free_species = index_vector_free_species;\n"
+  buffer *= "\tdata_dictionary.objective_coefficient_array = objective_coefficient_array;\n"
+  buffer *= "\tdata_dictionary.experimental_data_array = experimental_data_array;\n"
+  buffer *= "\n"
 
   if (reactor_option == :F)
     buffer *= "\tdata_dictionary.volumetric_flowrate_array = volumetric_flowrate_array;\n"
     buffer *= "\tdata_dictionary.material_feed_concentration_array = material_feed_concentration_array;\n"
     buffer *= "\tdata_dictionary.number_of_reactor_feed_streams = number_of_reactor_feed_streams;\n"
+    buffer *= "\tdata_dictionary.initial_volume = initial_volume;\n"
   elseif (reactor_option == :B)
     buffer *= "\tdata_dictionary.volumetric_flowrate_array = [];\n"
     buffer *= "\tdata_dictionary.material_feed_concentration_array = [];\n"
@@ -596,7 +776,7 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
   # initialize the buffer -
   buffer = ""
   buffer *= header_buffer
-  buffer *= "#\n"
+  buffer *= "%\n"
   buffer *= function_comment_buffer
   buffer *= "function flux_array = Kinetics(t,x,data_dictionary)\n"
   buffer *= "\tflux_array = calculate_flux_array(t,x,data_dictionary);\n"
@@ -621,26 +801,85 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
   buffer *= "function kinetic_flux_array = estimate_kinetic_fluxes(t,x,data_dictionary)\n"
   buffer *= "\n"
   buffer *= "\t% Get data from the data_dictionary - \n"
-  buffer *= "\trate_constant_array = data_dictionary.rate_constant_array\n"
-  buffer *= "\tsaturation_constant_array = data_dictionary.saturation_constant_array\n"
+  buffer *= "\trate_constant_array = data_dictionary.rate_constant_array;\n"
+  buffer *= "\tsaturation_constant_array = data_dictionary.saturation_constant_array;\n"
   buffer *= "\n"
   buffer *= "\t% Alias the species array (helps with debuging) - \n"
 
   # Alias the species -
+  counter::Int = 1;
   list_of_enzymes::Array{AbstractString} = AbstractString[]
   list_of_species::Array{SpeciesObject} = problem_object.list_of_species
   for (index,species_object::SpeciesObject) in enumerate(list_of_species)
 
-    # Get the species symbol -
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
     species_symbol = species_object.species_symbol
 
-    # Write the line -
-    buffer *= "\t$(species_symbol) = x($(index));\n"
+    if (species_type == :metabolite && species_bound_type == :free)
+      buffer *= "\t$(species_symbol) = x($(counter));\n"
+      counter = counter + 1
+    end
+
+    # if (species_type == :enzyme)
+    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
+    # end
+    #
+    # if (species_bound_type == :measured)
+    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
+    # end
+
+
   end
+
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    # if (species_type == :metabolite && species_bound_type == :free)
+    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
+    #   counter = counter + 1
+    # end
+
+    if (species_type == :enzyme)
+      buffer *= "\t$(species_symbol) = x($(counter));\n"
+      counter = counter + 1;
+    end
+    #
+    # if (species_bound_type == :measured)
+    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
+    # end
+
+  end
+
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    # if (species_type == :metabolite && species_bound_type == :free)
+    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
+    #   counter = counter + 1
+    # end
+
+    # if (species_type == :enzyme)
+    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
+    #   counter = counter + 1;
+    # end
+
+    if (species_bound_type == :measured)
+      buffer *= "\t$(species_symbol) = x($(counter));\n"
+      counter = counter + 1;
+    end
+  end
+
   buffer *= "\n"
 
   buffer *= "\t% Write the kinetics functions - \n"
-  buffer *= "\tkinetic_flux_array = []\n"
+  buffer *= "\tkinetic_flux_array = [];\n"
 
   # extract the list of metabolic reactions -
   saturation_constant_counter = 1
@@ -709,7 +948,7 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
 
       species_symbol = species_object.species_symbol
       species_type = species_object.species_type
-      buffer *= "*($(species_symbol))"
+      buffer *= "*($(species_symbol));"
     end
 
     # push -

@@ -2,8 +2,8 @@
 
 % Setup the time scale -
 time_start = 0.0;
-time_stop = 1.0;
 time_step = 1.0;
+time_stop = 120.0;
 
 % Load the data dictionary -
 data_dictionary = DataDictionary(time_start,time_stop,time_step);

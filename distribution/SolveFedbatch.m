@@ -48,17 +48,34 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
   initial_condition_array = data_dictionary.initial_condition_array;
   STM = data_dictionary.stoichiometric_matrix;
 
-  [total_number_of_states,total_number_of_fluxes] = size(STM);
+  % Split the experimental_data_array -
+  experimental_data_array = data_dictionary.experimental_data_array;
+  experimental_time_array = experimental_data_array(:,1);
+  experimental_state_array = experimental_data_array(:,2:end);
+
+  % Augment the initial_condition_array w/the measured species -
+  initial_condition_array = [initial_condition_array ; transpose(experimental_state_array(1,:))];
+
+  % Get the *free* and *measured* species - these will be updated, the rest will stay at the IC -
+  index_vector_measured_species = data_dictionary.index_vector_measured_species;
+	index_vector_free_species = data_dictionary.index_vector_free_species;
+
+  % Partition the stoichiometric_matrix -
+  dynamic_species_index_vector = [index_vector_free_species ; index_vector_measured_species];
+  stoichiometric_matrix =  STM(dynamic_species_index_vector,:);
+
+  % Get the system dimension -
+  [total_number_of_states,total_number_of_fluxes] = size(stoichiometric_matrix);
   state_archive = zeros(number_of_timesteps+1,total_number_of_states);
   flux_archive = zeros(number_of_timesteps+1,total_number_of_fluxes);
 
   % Get volume, and flow rate array -
-  volume = data_dictionary.initial_volume;
-  volumetric_flow_array = data_dictionary.volumetric_flow_array;
+  initial_volume = data_dictionary.initial_volume;
+  volumetric_flow_array = data_dictionary.volumetric_flowrate_array;
 
   % initialize the volume array -
-  volume_archive = zeros(number_of_timesteps+1,1)
-  volume_archive(1,1) = initial_volume
+  volume_archive = zeros(number_of_timesteps+1,1);
+  volume_archive(1,1) = initial_volume;
 
   % update the state_cache -
   update_archive(state_archive,initial_condition_array,1);
@@ -93,8 +110,8 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
 
     % Update the volume archive -
     next_volume = volume + time_step*volumetric_flow_array(time_step_index);
-    volume_archive(time_step_index+1,1) = next_volume
-    volume = next_volume
+    volume_archive(time_step_index+1,1) = next_volume;
+    volume = next_volume;
   end
 
 % return -

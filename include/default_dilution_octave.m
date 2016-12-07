@@ -11,44 +11,16 @@ function species_dilution_array = Dilution(t,x,data_dictionary)
   feed_composition_array = data_dictionary.material_feed_concentration_array;
   number_of_reactor_feed_streams = data_dictionary.number_of_reactor_feed_streams;
 
-  % Initialize the interpolated flow rate array -
-  interpolated_flow_rate_array = zeros(number_of_reactor_feed_streams,1);
-
-  % What is the current dilution rate?
+  % Formulate the dilution rate array -
   dilution_rate_array = zeros(number_of_reactor_feed_streams,1);
-  if (isempty(flowrate_array) == false && number_of_reactor_feed_streams>0)
+  dilution_rate_array(1,1) = flowrate_array(1,1)/(volume);
+  dilution_rate_array(2,1) = flowrate_array(2,1)/(volume);
+  dilution_rate_array(3,1) = flowrate_array(3,1)/(volume);
 
-    for feed_stream_index = 1:number_of_reactor_feed_streams
+  % Calculate the species feed array -
+  species_feed_array = feed_composition_array*dilution_rate_array;
+  species_dilution_array = species_feed_array - sum(dilution_rate_array)*x;
 
-      % interpolate, then calc the dilution rate -
-      flow_rate = interp1(flowrate_array(:,1),flowrate_array(:,feed_stream_index+1),t);
-      interpolated_flow_rate_array(feed_stream_index,1) = flow_rate;
-      dilution_rate_array(feed_stream_index,1) = (flow_rate)/(volume);
-    end
-  else
-    flow_rate = 0.0;
-    dilution_rate = 0.0;
-  end
-
-  % initialize the diltion array -
-  species_dilution_array = zeros(number_of_species,1);
-
-  % Check for an empty feed composition array, if empty skip this block -
-  if (isempty(feed_composition_array) == false)
-
-    % Compute -
-    for species_index = 1:number_of_species - 1
-      tmp_array = [];
-      for feed_stream_index = 1:number_of_reactor_feed_streams
-        tmp_value = dilution_rate_array(feed_stream_index,1)*(feed_composition_array(species_index,feed_stream_index) - x(species_index));
-        tmp_array = [tmp_array ; tmp_value];
-      end
-
-      species_dilution_array(species_index,1) = sum(tmp_array);
-    end
-
-
-    % Last element is F -
-    species_dilution_array(end,1) = sum(interpolated_flow_rate_array);
-  end
+  % Correct for volume -
+  species_dilution_array(end,1) = sum(dilution_rate_array);
 return
