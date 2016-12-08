@@ -79,20 +79,20 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
   volume_archive(1,1) = initial_volume;
 
   % update the state_cache -
-  update_archive(state_archive,initial_condition_array,1);
+  state_archive = update_archive(state_archive,initial_condition_array,1);
 
   % Compute the initial flux and update the flux_archive -
   initial_flux_array = Kinetics(0.0,initial_condition_array,initial_volume,data_dictionary);
-  update_archive(flux_archive,initial_flux_array,1);
+  flux_archive = update_archive(flux_archive,initial_flux_array,1);
 
   % Main simulation loop -
   for time_step_index = 1:number_of_timesteps
 
     % get the time value -
-    time_value = simulation_time_array(time_step_index)
+    time_value = simulation_time_array(time_step_index);
 
     % current state -
-    current_state_array = state_archive(time_step_index,:);
+    current_state_array = transpose(state_archive(time_step_index,:));
 
     % current volume -
     current_volume = volume_archive(time_step_index,1);
@@ -106,11 +106,15 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
     % update the state -
     next_state_array = current_state_array + time_step*(stoichiometric_matrix*flux_array+dilution_array);
 
+    % Check for negatives -
+    idx_negative = find(next_state_array<0);
+    next_state_array(idx_negative) = 0.0;
+
     % update the state_archive -
-    update_archive(state_archive,next_state_array,time_step_index+1);
+    state_archive = update_archive(state_archive,next_state_array,time_step_index+1);
 
     % Update the flux archive -
-    update_archive(flux_archive,flux_array,time_step_index+1);
+    flux_archive = update_archive(flux_archive,flux_array,time_step_index+1);
 
     % Update the volume archive -
     volume_archive(time_step_index+1,1) = current_volume + time_step*volumetric_flow_array(time_step_index);

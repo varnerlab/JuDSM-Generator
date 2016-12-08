@@ -31,7 +31,7 @@ function convex_flux_array = estimate_convex_fluxes(t,x,volume,kinetic_flux_arra
 
 	% Formulate the right-hand-side vector for the Equality constrainta -
 	free_array_block = STM(index_vector_convex_species,index_vector_kinetic_rates);
-	bEq = free_array_block*kinetic_flux_array;
+	bEq = -1*free_array_block*kinetic_flux_array;
 	% ============================================================================== %
 
 	% = INEQUALITY CONSTRAINTS ===================================================== %

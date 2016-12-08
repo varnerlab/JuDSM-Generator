@@ -10,14 +10,12 @@ function species_dilution_array = Dilution(t,x,volume,data_dictionary)
 
   % Formulate the dilution rate array -
   dilution_rate_array = zeros(number_of_reactor_feed_streams,1);
-  dilution_rate_array(1,1) = flowrate_array(1,1)/(volume);
-  dilution_rate_array(2,1) = flowrate_array(2,1)/(volume);
-  dilution_rate_array(3,1) = flowrate_array(3,1)/(volume);
+  dilution_rate_array(1,1) = flowrate_array(1,2)/(volume);
+  dilution_rate_array(2,1) = flowrate_array(1,3)/(volume);
+  dilution_rate_array(3,1) = flowrate_array(1,4)/(volume);
 
   % Calculate the species feed array -
   species_feed_array = feed_composition_array*dilution_rate_array;
   species_dilution_array = species_feed_array - sum(dilution_rate_array)*x;
 
-  % Correct for volume -
-  species_dilution_array(end,1) = sum(dilution_rate_array);
 return

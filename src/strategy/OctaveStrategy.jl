@@ -403,7 +403,7 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
     species_symbol = species_object.species_symbol
 
     if (species_bound_type == :balanced)
-      buffer *= "\t\t$(counter)\t;\t%\t$(species_symbol)\n"
+      buffer *= "\t\t$(index)\t;\t%\t$(counter) $(species_symbol)\n"
     end
 
     # update the counter -
@@ -428,12 +428,12 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
     comment_string = build_reaction_comment_string(reaction_object)
 
     # all reactions that are *not* kientic, or enzyme degradation?
-    if (is_enzyme_degradation_reaction(reaction_object) == true && reaction_type == :kinetic)
-      buffer *= "\t\t$(counter)\t;\t% $(reaction_string)::$(comment_string)\n"
-    end
+    if (is_enzyme_degradation_reaction(reaction_object) == true || reaction_type == :kinetic)
+      buffer *= "\t\t$(index)\t;\t% $(counter) $(reaction_string)::$(comment_string)\n"
 
-    # update the counter -
-    counter = counter + 1;
+      # update the counter -
+      counter = counter + 1;
+    end
   end
 
   buffer *= "\t];\n"
@@ -454,11 +454,11 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
 
     # all reactions that are *not* kientic, or enzyme degradation?
     if (is_enzyme_degradation_reaction(reaction_object) == false && reaction_type != :kinetic)
-      buffer *= "\t\t$(counter)\t;\t% $(reaction_string)::$(comment_string)\n"
-    end
+      buffer *= "\t\t$(index)\t;\t% $(counter) $(reaction_string)::$(comment_string)\n"
 
-    # update the counter -
-    counter = counter + 1;
+      # update the counter -
+      counter = counter + 1;
+    end
   end
 
   buffer *= "\t];\n"
@@ -476,12 +476,11 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
     species_symbol = species_object.species_symbol
 
     if (species_bound_type == :measured)
-      buffer *= "\t\t$(counter)\t;\t%\t$(species_symbol)\n"
+      buffer *= "\t\t$(index)\t;\t%\t$(counter) $(species_symbol)\n"
+
+      # update the counter -
+      counter = counter + 1
     end
-
-    # update the counter -
-    counter = counter + 1
-
   end
 
   buffer *= "\t];\n"
@@ -499,11 +498,11 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
     species_symbol = species_object.species_symbol
 
     if (species_bound_type == :free)
-      buffer *= "\t\t$(counter)\t;\t%\t$(species_symbol)\n"
-    end
+      buffer *= "\t\t$(index)\t;\t%\t$(counter) $(species_symbol)\n"
 
-    # update the counter -
-    counter = counter + 1
+      # update the counter -
+      counter = counter + 1
+    end
 
   end
 
@@ -939,6 +938,9 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
       # update -
       saturation_constant_counter = saturation_constant_counter + 1
     end
+
+    # closing ;
+    buffer *=";"
 
     # push -
     buffer *= "\n"

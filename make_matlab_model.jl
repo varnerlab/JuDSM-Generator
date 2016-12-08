@@ -53,6 +53,13 @@ function main()
   measured_species_vector::Array{SpeciesObject} = parse_vff_measured_species_statements(path_to_model_file)
   free_species_vector::Array{SpeciesObject} = parse_vff_free_species_statements(path_to_model_file)
 
+  # for (index,species_object) in enumerate(measured_species_vector)
+  #
+  #   @show species_object.species_symbol
+  #
+  # end
+
+
   # Generate the problem object -
   problem_object = generate_problem_object(metabolic_statement_vector,control_statement_vector,measured_species_vector,free_species_vector)
 
