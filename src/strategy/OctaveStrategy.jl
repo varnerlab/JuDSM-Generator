@@ -162,12 +162,37 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
     buffer *= "\n"
   end
 
-  # write the ic for the unbalanced variables -
-  buffer *= "\t% Initialize the intial condition array for species - \n"
-  buffer *= "\tinitial_condition_array = [\n"
+  # Get the default IC for convex species -
+  convex_species_default_ic = default_parameter_dictionary["default_convex_species_initial_condition"];
+
+  # Write the ic for convex species -
+  buffer *= "\t% Initialize the intial condition array for convex species - \n"
+  buffer *= "\tconvex_species_initial_condition_array = [\n"
+
   list_of_species::Array{SpeciesObject} = problem_object.list_of_species
   counter = 1
   for (index,species_object) in enumerate(list_of_species)
+
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_type == :metabolite && species_bound_type == :balanced)
+      buffer *= "\t\t$(convex_species_default_ic)\t;\t% $(counter) $(index) $(species_symbol)\t(units: mM)\n"
+      counter = counter + 1
+    end
+  end
+
+  buffer *= "\t];\n"
+  buffer *= "\n"
+
+  # write the ic for the unbalanced variables -
+  buffer *= "\t% Initialize the intial condition array for dynamic species - \n"
+  buffer *= "\tinitial_condition_array = [\n"
+
+  # Alias the species -
+  list_of_enzymes::Array{AbstractString} = AbstractString[]
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
 
     species_bound_type::Symbol = species_object.species_bound_type
     species_type::Symbol = species_object.species_type
@@ -177,12 +202,32 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
       buffer *= "\t\t0.0\t;\t% $(counter) $(index) $(species_symbol)\t(units: mM)\n"
       counter = counter + 1
     end
+  end
+
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
 
     if (species_type == :enzyme)
       buffer *= "\t\t$(enzyme_initial_condition)\t;\t% $(counter) $(index) $(species_symbol)\t(units: mM)\n"
-      counter = counter + 1
+      counter = counter + 1;
     end
+
   end
+
+  # for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+  #
+  #   species_bound_type::Symbol = species_object.species_bound_type
+  #   species_type::Symbol = species_object.species_type
+  #   species_symbol = species_object.species_symbol
+  #
+  #   if (species_bound_type == :measured)
+  #     buffer *= "\t\t0.0\t;\t% $(counter) $(index) $(species_symbol)\t(units: mM)\n"
+  #     counter = counter + 1;
+  #   end
+  # end
 
   buffer *= "\t];\n"
   buffer *= "\n"
@@ -537,6 +582,7 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   buffer *= "\t% =============================== DO NOT EDIT BELOW THIS LINE ============================== %\n"
   buffer *= "\tdata_dictionary = [];\n"
   buffer *= "\tdata_dictionary.initial_condition_array = initial_condition_array;\n"
+  buffer *= "\tdata_dictionary.convex_species_initial_condition_array = convex_species_initial_condition_array;\n"
   buffer *= "\tdata_dictionary.total_number_of_states = length(initial_condition_array);\n"
   buffer *= "\tdata_dictionary.stoichiometric_matrix = stoichiometric_matrix;\n"
   buffer *= "\tdata_dictionary.index_vector_convex_species = index_vector_convex_species;\n"
@@ -844,16 +890,6 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
       buffer *= "\t$(species_symbol) = x($(counter));\n"
       counter = counter + 1
     end
-
-    # if (species_type == :enzyme)
-    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
-    # end
-    #
-    # if (species_bound_type == :measured)
-    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
-    # end
-
-
   end
 
   for (index,species_object::SpeciesObject) in enumerate(list_of_species)
@@ -861,20 +897,11 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
     species_bound_type::Symbol = species_object.species_bound_type
     species_type::Symbol = species_object.species_type
     species_symbol = species_object.species_symbol
-
-    # if (species_type == :metabolite && species_bound_type == :free)
-    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
-    #   counter = counter + 1
-    # end
 
     if (species_type == :enzyme)
       buffer *= "\t$(species_symbol) = x($(counter));\n"
       counter = counter + 1;
     end
-    #
-    # if (species_bound_type == :measured)
-    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
-    # end
 
   end
 
@@ -883,16 +910,6 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
     species_bound_type::Symbol = species_object.species_bound_type
     species_type::Symbol = species_object.species_type
     species_symbol = species_object.species_symbol
-
-    # if (species_type == :metabolite && species_bound_type == :free)
-    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
-    #   counter = counter + 1
-    # end
-
-    # if (species_type == :enzyme)
-    #   buffer *= "\t$(species_symbol) = x($(counter));\n"
-    #   counter = counter + 1;
-    # end
 
     if (species_bound_type == :measured)
       buffer *= "\t$(species_symbol) = x($(counter));\n"
@@ -901,7 +918,21 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
   end
 
   buffer *= "\n"
+  buffer *= "\t% Convex species alias - \n"
+  buffer *= "\tconvex_species_initial_condition_array = data_dictionary.convex_species_initial_condition_array;\n"
+  counter = 1
+  for (index,species_object) in enumerate(list_of_species)
 
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_type == :metabolite && species_bound_type == :balanced)
+      buffer *= "\t$(species_symbol) = convex_species_initial_condition_array($(counter));\n"
+      counter = counter + 1
+    end
+  end
+  buffer *= "\n"
   buffer *= "\t% Write the kinetics functions - \n"
   buffer *= "\tkinetic_flux_array = [];\n"
 
@@ -924,7 +955,15 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
     if (enyzme_generation_flag == 0)
       buffer *= "\tflux = rate_constant_array($(index))"
     else
-      buffer *= "\tflux = rate_constant_array($(index))*(E_$(reaction_name))"
+
+      # Cutoff _revrese -
+      if (contains(reaction_name,"_reverse") == true)
+        local_enzyme_name = reaction_name[1:end-8]
+        buffer *= "\tflux = rate_constant_array($(index))*(E_$(local_enzyme_name))"
+      else
+        local_enzyme_name = reaction_name
+        buffer *= "\tflux = rate_constant_array($(index))*(E_$(local_enzyme_name))"
+      end
     end
 
     # ok, get the list of reactants -
@@ -933,7 +972,7 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
 
       species_symbol = species_object.species_symbol
       species_type = species_object.species_type
-      buffer *= "*($(species_symbol))/(saturation_constant_array($(saturation_constant_counter))+$(species_symbol))"
+      buffer *= "*(($(species_symbol))/(saturation_constant_array($(saturation_constant_counter))+$(species_symbol)))"
 
       # update -
       saturation_constant_counter = saturation_constant_counter + 1

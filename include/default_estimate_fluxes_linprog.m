@@ -24,6 +24,7 @@ function convex_flux_array = estimate_convex_fluxes(t,x,volume,kinetic_flux_arra
 	index_vector_convex_rates = data_dictionary.index_vector_convex_rates;
 	index_vector_measured_species = data_dictionary.index_vector_measured_species;
 	index_vector_kinetic_rates = data_dictionary.index_vector_kinetic_rates;
+	index_vector_free_species = data_dictionary.index_vector_free_species;
 
 	% = EQUALITY CONSTRAINTS ======================================================= %
 	% Formulate the convex_array_block (eqality constrainta) -
@@ -50,12 +51,13 @@ function convex_flux_array = estimate_convex_fluxes(t,x,volume,kinetic_flux_arra
 	interpolated_measurements = interp1(60*measurement_array_block(:,1),measurement_array_block(:,2:end),t+Ts);
 
 	% upper bound inequality constraints -
+	number_of_free_species = length(index_vector_free_species);
 	for measured_species_index = 1:number_of_measured_species
 
 		% Get the measured and simulated species -
 		measured_value = interpolated_measurements(measured_species_index);
-		simulated_value = x(index_vector_measured_species(measured_species_index));
-		feed_source_term = species_dilution_array(index_vector_measured_species(measured_species_index));
+		simulated_value = x(number_of_free_species+measured_species_index);
+		feed_source_term = species_dilution_array(number_of_free_species+measured_species_index);
 
 		% Calc the upper and lower bounds -
 		upper_ineq(measured_species_index,1) = (1/Ts)*(measured_value*(1+epsilon)-simulated_value) - feed_source_term;
@@ -80,5 +82,11 @@ function convex_flux_array = estimate_convex_fluxes(t,x,volume,kinetic_flux_arra
 
   % Call the LP solver -
   [convex_flux_array,fVal,status,OUT,LAM] = linprog(objective_vector,A,b,AEq,bEq,LB,UB,[],options);
+
+	% Shutdown -
+	if (status ~= 1)
+		number_of_convex_rates = length(index_vector_convex_rates);
+		convex_flux_array = zeros(number_of_convex_rates,1);
+	end
 
 return;

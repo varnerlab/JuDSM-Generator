@@ -6,8 +6,9 @@
     "default_saturation_constant":"0.05",
     "default_enzyme_kcat":"25000.0",
     "default_number_of_feed_streams":"3",
+    "default_convex_species_initial_condition":"1.0",
     "default_volumetric_flowrate_array":"Flow_Run-1.csv",
-    "default_experimental_data_array":"State_Run-1.csv"
+    "default_experimental_data_array":"M_glc_c-Run-1.csv"
   },
 
   "default_user_dictionary":{
