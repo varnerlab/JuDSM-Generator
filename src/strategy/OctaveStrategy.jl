@@ -192,6 +192,7 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
 
   # Alias the species -
   list_of_enzymes::Array{AbstractString} = AbstractString[]
+  counter = 1
   for (index,species_object::SpeciesObject) in enumerate(list_of_species)
 
     species_bound_type::Symbol = species_object.species_bound_type
