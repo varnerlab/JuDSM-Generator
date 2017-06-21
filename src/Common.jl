@@ -265,7 +265,7 @@ function partition!(list_of_species::Array{SpeciesObject})
       push!(list_of_balanced_indexes,index)
     elseif (species_bound_type == :measured)
       push!(list_of_measured_indexes,index)
-    elseif (species_bound_type == :free)
+    elseif (species_bound_type == :free || species_bound_type == :unbalanced)
       push!(list_of_free_indexes,index)
     end
   end

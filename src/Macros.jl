@@ -1,4 +1,4 @@
-macro include_function(src_file_name)
+macro include_function_julia(src_file_name)
 
   # create src_buffer -
   src_buffer::Array{AbstractString} = AbstractString[]

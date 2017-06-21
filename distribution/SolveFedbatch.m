@@ -53,8 +53,11 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
   experimental_time_array = experimental_data_array(:,1);
   experimental_state_array = experimental_data_array(:,2:end);
 
+  % Re-order the measursement array -
+  measurement_selection_index_vector = data_dictionary.measurement_selection_index_vector;
+
   % Augment the initial_condition_array w/the measured species -
-  initial_condition_array = [initial_condition_array ; transpose(experimental_state_array(1,:))];
+  initial_condition_array = [initial_condition_array ; transpose(experimental_state_array(1,measurement_selection_index_vector))];
 
   % Get the *free* and *measured* species - these will be updated, the rest will stay at the IC -
   index_vector_measured_species = data_dictionary.index_vector_measured_species;
@@ -118,6 +121,11 @@ function [simulation_time_array,state_archive,flux_archive,volume_archive] = Sol
 
     % Update the volume archive -
     volume_archive(time_step_index+1,1) = current_volume + time_step*volumetric_flow_array(time_step_index);
+
+    % message to the user -
+    msg = ['Completed ',num2str(time_value),' min'];
+    disp(msg);
+
   end
 
 % return -

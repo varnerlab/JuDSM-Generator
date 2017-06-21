@@ -8,7 +8,7 @@
     "default_number_of_feed_streams":"3",
     "default_convex_species_initial_condition":"1.0",
     "default_volumetric_flowrate_array":"Flow_Run-1.csv",
-    "default_experimental_data_array":"M_glc_c-Run-1.csv"
+    "default_experimental_data_array":"State_Run-1.csv"
   },
 
   "default_user_dictionary":{
@@ -19,6 +19,11 @@
     "default_city_address":"Ithaca",
     "default_state_address":"NY",
     "default_zipcode":"14850"
+  },
+
+  "unbalanced_species_suffix":{
+
+    "symbol":"_e"
   },
 
   "function_comment_dictionary":{

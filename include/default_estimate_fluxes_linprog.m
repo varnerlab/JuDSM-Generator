@@ -47,8 +47,11 @@ function convex_flux_array = estimate_convex_fluxes(t,x,volume,kinetic_flux_arra
 		-1*measured_stm_block		;	% lower bound
 	];
 
+	% Re-order the measursement array -
+  measurement_selection_index_vector = data_dictionary.measurement_selection_index_vector;
+
 	% We need to interpolate the measurement_array_block - (interpolate 1 step ahead)
-	interpolated_measurements = interp1(60*measurement_array_block(:,1),measurement_array_block(:,2:end),t+Ts);
+	interpolated_measurements = interp1(60*measurement_array_block(:,1),measurement_array_block(:,measurement_selection_index_vector+1),t+Ts);
 
 	% upper bound inequality constraints -
 	number_of_free_species = length(index_vector_free_species);
@@ -78,7 +81,7 @@ function convex_flux_array = estimate_convex_fluxes(t,x,volume,kinetic_flux_arra
 	% ============================================================================== %
 
 	% What are my options?
-	options = optimset('TolFun',1e-6);
+	options = optimset('TolFun',1e-6,'Display','none');
 
   % Call the LP solver -
   [convex_flux_array,fVal,status,OUT,LAM] = linprog(objective_vector,A,b,AEq,bEq,LB,UB,[],options);

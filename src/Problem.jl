@@ -1,5 +1,4 @@
 function generate_problem_object(metabolic_statement_vector::Array{VFFSentence},
-  control_sentence_vector::Array{VFFControlSentence},
   measured_species_vector::Array{SpeciesObject},
   free_species_vector::Array{SpeciesObject})
 
@@ -39,7 +38,6 @@ function generate_problem_object(metabolic_statement_vector::Array{VFFSentence},
   # set data on problem_object -
   problem_object.list_of_species = species_array
   problem_object.list_of_reactions = reaction_array
-  problem_object.list_of_control_statements = partition!(control_sentence_vector)
 
   # return#the problem_object -
   return problem_object
@@ -189,7 +187,7 @@ function is_species_balanced(species_symbol::AbstractString)
   suffix = species_symbol[(symbol_length-2):end]
 
   # Compartment?
-  if (contains(suffix,"_u") == true)
+  if (contains(suffix,"_e") == true)
     return false
   else
     return true
@@ -221,7 +219,14 @@ function build_species_list!(reaction_clause::AbstractString,list_of_species::Ar
         # Build the species object -
         species_object.species_index = 0.0
         species_object.species_type = :metabolite
-        species_object.species_bound_type = :balanced
+
+        # is this species unbalanced?
+        if (is_species_balanced(symbol) == true)
+          species_object.species_bound_type = :balanced
+        else
+          species_object.species_bound_type = :unbalanced
+        end
+
         species_object.species_symbol = symbol
         species_object.stoichiometric_coefficient = parse(Float64,coefficient)
         species_object.species_compartment = :reactor
@@ -239,7 +244,14 @@ function build_species_list!(reaction_clause::AbstractString,list_of_species::Ar
         # Build the species object -
         species_object.species_index = 0.0
         species_object.species_type = :metabolite
-        species_object.species_bound_type = :balanced
+
+        # is this species unbalanced?
+        if (is_species_balanced(symbol) == true)
+          species_object.species_bound_type = :balanced
+        else
+          species_object.species_bound_type = :unbalanced
+        end
+
         species_object.species_symbol = symbol
         species_object.stoichiometric_coefficient = coefficient
         species_object.species_compartment = :reactor
@@ -303,7 +315,14 @@ function build_species_list(statement_vector::Array{VFFSentence})
     species_object.species_index = index
     species_object.stoichiometric_coefficient = 0.0
     species_object.species_type = :metabolite
-    species_object.species_bound_type = :balanced
+
+    # can we check to see if this is balanced?
+    if (is_species_balanced(species_symbol) == true)
+      species_object.species_bound_type = :balanced
+    else
+      species_object.species_bound_type = :unbalanced
+    end
+
     species_object.species_compartment = :reactor
 
     # push -

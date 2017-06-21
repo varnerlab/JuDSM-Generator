@@ -353,6 +353,10 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
     buffer *= "\t% load the experimental_data_array - \n"
     buffer *= "\texperimental_data_array = load('$(default_values_dictionary["default_experimental_data_array"])');\n"
     buffer *= "\n"
+    buffer *= "\t% Re-order the experimental measurements?\n"
+    buffer *= "\tmeasurement_selection_index_vector = [];\n";
+
+    buffer *= "\n"
     buffer *= "\t% Setup the feed concentrations - \n"
     buffer *= "\tmaterial_feed_concentration_array = [\n"
     buffer *= "\t\n"
@@ -593,6 +597,7 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   buffer *= "\tdata_dictionary.index_vector_free_species = index_vector_free_species;\n"
   buffer *= "\tdata_dictionary.objective_coefficient_array = objective_coefficient_array;\n"
   buffer *= "\tdata_dictionary.experimental_data_array = experimental_data_array;\n"
+  buffer *= "\tdata_dictionary.measurement_selection_index_vector = measurement_selection_index_vector;\n"
   buffer *= "\n"
 
   if (reactor_option == :F)

@@ -288,6 +288,8 @@ function vff_metabolic_sentence_factory(sentence::String,handler_symbol::Symbol)
   # split the sentence -
   split_array = split(sentence,",")
 
+  @show split_array
+
   # sentence_name::AbstractString
   # sentence_reactant_clause::AbstractString
   # sentence_product_clause::AbstractString
@@ -295,19 +297,10 @@ function vff_metabolic_sentence_factory(sentence::String,handler_symbol::Symbol)
   # sentence_forward_bound::Float64
   # sentence_delimiter::Char
   vff_sentence.sentence_name = split_array[1]
-
-  # grab the enzme type flag -
-  enzyme_type_flag = split_array[2]
-  if (enzyme_type_flag == "[]" || enzyme_type_flag == "1")
-    vff_sentence.sentence_type_flag = 1
-  else
-    vff_sentence.sentence_type_flag = 0
-  end
-
-  vff_sentence.sentence_reactant_clause = split_array[3]
-  vff_sentence.sentence_product_clause = split_array[4]
-  vff_sentence.sentence_reverse_bound = parse(Float64,split_array[5])
-  vff_sentence.sentence_forward_bound = parse(Float64,split_array[6])
+  vff_sentence.sentence_reactant_clause = split_array[2]
+  vff_sentence.sentence_product_clause = split_array[3]
+  vff_sentence.sentence_reverse_bound = parse(Float64,split_array[4])
+  vff_sentence.sentence_forward_bound = parse(Float64,split_array[5])
   vff_sentence.sentence_handler = handler_symbol
   vff_sentence.sentence_delimiter = ','
 
