@@ -62,8 +62,10 @@ function main()
   solver_type = parsed_args["s"]
   reactor_type = parsed_args["r"]
   component_set = Set{ProgramComponent}()
-  # program_component_data_dictionary = build_data_dictionary_buffer(problem_object,solver_type,reactor_type)
-  # push!(component_set,program_component_data_dictionary)
+
+  # Write the data dictionary -
+  program_component_data_dictionary = build_data_dictionary_buffer(problem_object,solver_type,reactor_type)
+  push!(component_set,program_component_data_dictionary)
 
   # # Write the dilution -
   # program_component_dilution = build_dilution_buffer(problem_object,solver_type,reactor_type)

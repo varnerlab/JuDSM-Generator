@@ -23,30 +23,15 @@
 # ----------------------------------------------------------------------------------- #
 #
 # ----------------------------------------------------------------------------------- #
-# Function: Kinetics
-# Description: Calculate the flux array at time t
-# Generated on: 2017-06-29T16:10:53.051
+# Function: DataDictionary
+# Description: Holds simulation and model parameters as key => value pairs in a Julia Dict()
+# Generated on: 2017-06-29T16:10:52.889
 #
 # Input arguments:
-# t::Float64 => Current time value (scalar) 
-# x::Array{Float64,1} => State array (number_of_species x 1) 
-# data_dictionary::Dict{AbstractString,Any} => Dictionary holding model parameters 
+# time_start::Float64 => Simulation start time value (scalar)
+# time_stop::Float64 => Simulation stop time value (scalar)
+# time_step::Float64 => Simulation time step (scalar)
 #
 # Output arguments:
-# flux_array::Array{Float64,1} => Flux array (number_of_rates x 1) at time t 
+# data_dictionary::Dict{AbstractString,Any} => Dictionary holding model and simulation parameters as key => value pairs
 # ----------------------------------------------------------------------------------- #
-function Kinetics(t,x,volume,data_dictionary)
-
-	# Get data from the data_dictionary - 
-	rate_constant_array = data_dictionary["rate_constant_array"];
-	saturation_constant_array = data_dictionary["saturation_constant_array"];
-
-	# Alias the species array (helps with debuging) - 
-
-	# Convex species alias - 
-	convex_species_initial_condition_array = data_dictionary["convex_species_initial_condition_array"];
-
-	# Write the kinetics functions - 
-	kinetic_flux_array = Array{Float64}[];
-return kinetic_flux_array
-

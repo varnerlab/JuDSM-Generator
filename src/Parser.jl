@@ -12,7 +12,7 @@ function parse_vff_measured_species_statements(path_to_model_file::AbstractStrin
     open(path_to_model_file,"r") do model_file
       for line in eachline(model_file)
 
-          if (contains(line,"//") == false && search(line,"\n")[1] != 1)
+          if (contains(line,"//") == false && search(line,"\n") != 0:-1)
             push!(tmp_array,chomp(line))
           end
       end
@@ -61,7 +61,7 @@ function parse_vff_free_species_statements(path_to_model_file::AbstractString)
     open(path_to_model_file,"r") do model_file
       for line in eachline(model_file)
 
-          if (contains(line,"//") == false && search(line,"\n")[1] != 1)
+          if (contains(line,"//") == false && search(line,"\n") != 0:-1)
             push!(tmp_array,chomp(line))
           end
       end
@@ -105,7 +105,7 @@ function parse_vff_control_statements(path_to_model_file::AbstractString)
     open(path_to_model_file,"r") do model_file
       for line in eachline(model_file)
 
-          if (contains(line,"//") == false && search(line,"\n")[1] != 1)
+          if (contains(line,"//") == false && search(line,"\n") != 0:-1)
             push!(tmp_array,chomp(line))
           end
       end
@@ -153,7 +153,9 @@ function parse_vff_metabolic_statements(path_to_model_file::AbstractString)
     open(path_to_model_file,"r") do model_file
       for line in eachline(model_file)
 
-          if (contains(line,"//") == false && search(line,"\n")[1] != 1)
+          @show line
+
+          if (contains(line,"//") == false && search(line,"\n") != 0:-1)
             push!(tmp_array,chomp(line))
           end
       end

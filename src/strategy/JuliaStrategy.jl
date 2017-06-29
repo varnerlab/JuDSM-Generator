@@ -78,6 +78,28 @@ end
 
 function build_data_dictionary_buffer(problem_object::ProblemObject,solver_option::Symbol,reactor_option::Symbol)
 
+  filename = "DataDictionary.jl"
+
+  # build the header -
+  header_buffer = build_copyright_header_buffer(problem_object)
+
+  # get the comment buffer -
+  comment_header_dictionary = problem_object.configuration_dictionary["function_comment_dictionary"]["data_dictionary_function"]
+  function_comment_buffer = build_function_header_buffer(comment_header_dictionary)
+
+  # initialize the buffer -
+  buffer = ""
+  buffer *= header_buffer
+  buffer *= "#\n"
+  buffer *= function_comment_buffer
+
+  # build the component -
+  program_component::ProgramComponent = ProgramComponent()
+  program_component.filename = filename
+  program_component.buffer = buffer
+
+  # return -
+  return (program_component)
 end
 
 function build_dilution_buffer(problem_object::ProblemObject,solver_option::Symbol,reactor_option::Symbol)
