@@ -78,6 +78,7 @@ end
 
 function build_data_dictionary_buffer(problem_object::ProblemObject,solver_option::Symbol,reactor_option::Symbol)
 
+  # What is my filename?
   filename = "DataDictionary.jl"
 
   # build the header -
@@ -92,6 +93,9 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   buffer *= header_buffer
   buffer *= "#\n"
   buffer *= function_comment_buffer
+  buffer *= "function DataDictionary(time_start::Float64,time_stop::Float64,time_step::Float64)\n"
+  buffer *= "\n"
+  buffer *= "return\n"
 
   # build the component -
   program_component::ProgramComponent = ProgramComponent()
@@ -103,7 +107,6 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
 end
 
 function build_dilution_buffer(problem_object::ProblemObject,solver_option::Symbol,reactor_option::Symbol)
-
 end
 
 function build_control_buffer(problem_object::ProblemObject)
@@ -196,7 +199,7 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
   buffer *= header_buffer
   buffer *= "#\n"
   buffer *= function_comment_buffer
-  buffer *= "function Kinetics(t,x,volume,data_dictionary)\n"
+  buffer *= "function Kinetics(t,x,enzyme_array,volume,data_dictionary)\n"
   buffer *= "\n"
   buffer *= "\t# Get data from the data_dictionary - \n"
   buffer *= "\trate_constant_array = data_dictionary[\"rate_constant_array\"];\n"
@@ -246,7 +249,7 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
 
   buffer *= "\n"
   buffer *= "\t# Convex species alias - \n"
-  buffer *= "\tconvex_species_initial_condition_array = data_dictionary[\"convex_species_initial_condition_array\"];\n"
+  buffer *= "\tconvex_initial_condition_array = data_dictionary[\"convex_species_initial_condition_array\"];\n"
   counter = 1
   for (index,species_object) in enumerate(list_of_species)
 
@@ -255,7 +258,7 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
     species_symbol = species_object.species_symbol
 
     if (species_type == :metabolite && species_bound_type == :balanced)
-      buffer *= "\t$(species_symbol) = convex_species_initial_condition_array[$(counter)];\n"
+      buffer *= "\t$(species_symbol) = convex_initial_condition_array[$(counter)];\n"
       counter = counter + 1
     end
   end
@@ -267,7 +270,7 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
     species_symbol = species_object.species_symbol
 
     if (species_type == :metabolite && species_bound_type == :unbalanced)
-      buffer *= "\t$(species_symbol) = convex_species_initial_condition_array[$(counter)];\n"
+      buffer *= "\t$(species_symbol) = convex_initial_condition_array[$(counter)];\n"
       counter = counter + 1
     end
   end
@@ -275,6 +278,7 @@ function build_kinetics_buffer(problem_object::ProblemObject,solver_option::Symb
   buffer *= "\n"
   buffer *= "\t# Write the kinetics functions - \n"
   buffer *= "\tkinetic_flux_array = Array{Float64}[];\n"
+  buffer *= "\n"
 
   # extract the list of metabolic reactions -
   saturation_constant_counter = 1
@@ -420,7 +424,7 @@ function extract_metabolic_reactions(list_of_reactions::Array{ReactionObject})
     # What is the reaction_type?
     reaction_type::Symbol = reaction_object.reaction_type
 
-    @show reaction_object
+    # @show reaction_object
 
     # is this a metabolic_reaction?
     is_metabolic_reaction::Bool = false
