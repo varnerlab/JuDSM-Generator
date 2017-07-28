@@ -23,18 +23,18 @@
 # ----------------------------------------------------------------------------------- #
 #
 # ----------------------------------------------------------------------------------- #
-# Function: DataDictionary
-# Description: Holds simulation and model parameters as key => value pairs in a Julia Dict()
-# Generated on: 2017-07-24T07:32:57.183
+# Function: Dilution
+# Description: Calculate the dilution effects from nutrient transport
+# Generated on: 2017-07-24T07:32:57.232
 #
 # Input arguments:
-# time_start::Float64 => Simulation start time value (scalar) 
-# time_stop::Float64 => Simulation stop time value (scalar) 
-# time_step::Float64 => Simulation time step (scalar) 
+# t::Float64 => Current time value (scalar) 
+# x::Array{Float64,1} => State array (number_of_species x 1) 
+# data_dictionary::Dict{AbstractString,Any} => Dictionary holding model parameters 
 #
 # Output arguments:
-# data_dictionary::Dict{AbstractString,Any} => Dictionary holding model and simulation parameters as key => value pairs 
+# dilution_array::Array{Float64,1} => Dilution array (number_of_species x 1) at time t 
 # ----------------------------------------------------------------------------------- #
-function DataDictionary(time_start::Float64,time_stop::Float64,time_step::Float64)
+function Dilution(t,metabolite_array,enzyme_array,volume,data_dictionary)
 
 return

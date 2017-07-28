@@ -12,15 +12,14 @@ function parse_vff_measured_species_statements(path_to_model_file::AbstractStrin
     open(path_to_model_file,"r") do model_file
       for line in eachline(model_file)
 
-          if (contains(line,"//") == false && search(line,"\n") != 0:-1)
-            push!(tmp_array,chomp(line))
+          if (contains(line,"//") == false && search(line,"\n") == 0:-1 && line != "")
+            push!(tmp_array,convert(String,chomp(line)))
           end
       end
     end
 
     counter = 1
     for sentence in tmp_array
-
 
 
       # Check the current pragma -
