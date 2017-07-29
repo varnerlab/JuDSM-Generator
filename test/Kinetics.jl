@@ -25,7 +25,7 @@
 # ----------------------------------------------------------------------------------- #
 # Function: Kinetics
 # Description: Calculate the flux array at time t
-# Generated on: 2017-07-24T07:32:57.347
+# Generated on: 2017-07-28T19:04:55.639
 #
 # Input arguments:
 # t::Float64 => Current time value (scalar) 
@@ -210,24 +210,23 @@ function Kinetics(t,x,enzyme_array,volume,data_dictionary)
 	M_gly_L_e = convex_initial_condition_array[155];
 	M_h2o_e = convex_initial_condition_array[156];
 	M_h2s_e = convex_initial_condition_array[157];
-	M_h_e = convex_initial_condition_array[158];
-	M_hco3_e = convex_initial_condition_array[159];
-	M_his_L_e = convex_initial_condition_array[160];
-	M_ile_L_e = convex_initial_condition_array[161];
-	M_leu_L_e = convex_initial_condition_array[162];
-	M_lys_L_e = convex_initial_condition_array[163];
-	M_met_L_e = convex_initial_condition_array[164];
-	M_nh3_e = convex_initial_condition_array[165];
-	M_o2_e = convex_initial_condition_array[166];
-	M_phe_L_e = convex_initial_condition_array[167];
-	M_pi_e = convex_initial_condition_array[168];
-	M_pro_L_e = convex_initial_condition_array[169];
-	M_prop_e = convex_initial_condition_array[170];
-	M_ser_L_e = convex_initial_condition_array[171];
-	M_thr_L_e = convex_initial_condition_array[172];
-	M_trp_L_e = convex_initial_condition_array[173];
-	M_tyr_L_e = convex_initial_condition_array[174];
-	M_val_L_e = convex_initial_condition_array[175];
+	M_hco3_e = convex_initial_condition_array[158];
+	M_his_L_e = convex_initial_condition_array[159];
+	M_ile_L_e = convex_initial_condition_array[160];
+	M_leu_L_e = convex_initial_condition_array[161];
+	M_lys_L_e = convex_initial_condition_array[162];
+	M_met_L_e = convex_initial_condition_array[163];
+	M_nh3_e = convex_initial_condition_array[164];
+	M_o2_e = convex_initial_condition_array[165];
+	M_phe_L_e = convex_initial_condition_array[166];
+	M_pi_e = convex_initial_condition_array[167];
+	M_pro_L_e = convex_initial_condition_array[168];
+	M_prop_e = convex_initial_condition_array[169];
+	M_ser_L_e = convex_initial_condition_array[170];
+	M_thr_L_e = convex_initial_condition_array[171];
+	M_trp_L_e = convex_initial_condition_array[172];
+	M_tyr_L_e = convex_initial_condition_array[173];
+	M_val_L_e = convex_initial_condition_array[174];
 
 	# Write the kinetics functions - 
 	kinetic_flux_array = Array{Float64}[];

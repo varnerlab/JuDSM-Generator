@@ -537,7 +537,6 @@ M_succ_c_exchange,M_succ_c,M_succ_e,-inf,inf
 M_pyr_c_exchange,M_pyr_c,M_pyr_e,-inf,inf
 M_o2_c_exchange,M_o2_c,M_o2_e,-inf,inf
 M_co2_c_exchange,M_co2_c,M_co2_e,-inf,inf
-M_h_c_exchange,M_h_c,M_h_e,-inf,inf
 M_h2o_c_exchange,M_h2o_c,M_h2o_e,-inf,inf
 
 // AA exchange reactions -

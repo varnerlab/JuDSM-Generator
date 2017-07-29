@@ -51,6 +51,8 @@ function main()
   measured_species_vector::Array{SpeciesObject} = parse_vff_measured_species_statements(path_to_model_file)
   free_species_vector::Array{SpeciesObject} = parse_vff_free_species_statements(path_to_model_file)
 
+  @show free_species_vector
+
   # Generate the problem object -
   problem_object = generate_problem_object(metabolic_statement_vector,measured_species_vector,free_species_vector)
 
@@ -76,8 +78,10 @@ function main()
   push!(component_set,program_component_kinetics)
 
   # Write the Inputs -
-  # program_component_inputs = build_inputs_buffer_matlab(problem_object)
-  # push!(component_set,program_component_inputs)
+  program_component_inputs = build_inputs_buffer(problem_object)
+  push!(component_set,program_component_inputs)
+
+  # Write the flux bound array pointer - \n
 
   # Write the Inputs -
   # program_component_control = build_control_buffer(problem_object)

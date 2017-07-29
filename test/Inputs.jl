@@ -23,9 +23,9 @@
 # ----------------------------------------------------------------------------------- #
 #
 # ----------------------------------------------------------------------------------- #
-# Function: Dilution
-# Description: Calculate the dilution effects from nutrient transport
-# Generated on: 2017-07-28T19:04:55.506
+# Function: Inputs
+# Description: Calculate the simulation inputs at time t
+# Generated on: 2017-07-28T19:04:55.694
 #
 # Input arguments:
 # t::Float64 => Current time value (scalar) 
@@ -33,8 +33,14 @@
 # data_dictionary::Dict{AbstractString,Any} => Dictionary holding model parameters 
 #
 # Output arguments:
-# dilution_array::Array{Float64,1} => Dilution array (number_of_species x 1) at time t 
+# u::Array{Float64,1} => Input array (number_of_species x 1) at time t 
 # ----------------------------------------------------------------------------------- #
-function Dilution(t,metabolite_array,enzyme_array,volume,data_dictionary)
+function Inputs(t,x,data_dictionary)
+	input_array = calculate_input_array(t,x,data_dictionary);
+return
 
+function calculate_input_array(t,x,data_dictionary)
+
+	# Default input array - 
+	input_array = zeros(length(x),1);
 return

@@ -11,7 +11,7 @@ function parse_vff_measured_species_statements(path_to_model_file::AbstractStrin
     # Open the model file, and read each line into a vector -
     open(path_to_model_file,"r") do model_file
       for line in eachline(model_file)
-
+        
           if (contains(line,"//") == false && search(line,"\n") == 0:-1 && line != "")
             push!(tmp_array,convert(String,chomp(line)))
           end

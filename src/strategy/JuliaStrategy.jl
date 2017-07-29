@@ -95,7 +95,138 @@ function build_data_dictionary_buffer(problem_object::ProblemObject,solver_optio
   buffer *= function_comment_buffer
   buffer *= "function DataDictionary(time_start::Float64,time_stop::Float64,time_step::Float64)\n"
   buffer *= "\n"
-  buffer *= "return\n"
+
+  # Alias -
+  buffer *="\t# Species list - \n"
+  list_of_species::Array{SpeciesObject} = problem_object.list_of_species
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    buffer *= "\t# $(species_symbol) $(index)\n"
+  end
+
+  # Setup the flag -
+  buffer *= "\n"
+  buffer *= "\t# Is this min or max - \n"
+  buffer *= "\tis_minimum_flag = false\n"
+
+  buffer *="\n"
+  buffer *= "\t# Load the complete stoichiometric_matrix - \n"
+  buffer *= "\tstoichiometric_matrix = readdlm(\"./Network.dat\")\n"
+  buffer *= "\n"
+
+  # get the index of dyanmic species -
+  counter::Int = 1
+  buffer *="\t# Dyanmic species array -\n"
+  buffer *="\tdynamic_species_index_array = [\n"
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+
+    # get species -
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_type == :metabolite && (species_bound_type == :free))
+
+      buffer *="\t\t$(index)\t;\t# $(counter) $(species_symbol)\n"
+
+      # update -
+      counter = counter + 1
+
+    end
+  end
+  buffer *="\t];\n"
+  buffer *="\tfree_stoichiometric_array = stoichiometric_matrix[dynamic_species_index_array,:];\n"
+  buffer *= "\n"
+
+  counter = 1
+  buffer *="\t# Measured species array -\n"
+  buffer *="\tmeasured_species_index_array = [\n"
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+
+    # get species -
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_type == :metabolite && species_bound_type == :measured)
+
+      buffer *="\t\t$(index)\t;\t# $(counter) $(species_symbol)\n"
+
+      # update -
+      counter = counter + 1
+
+    end
+  end
+  buffer *="\t];\n"
+  buffer *="\tmeasured_stoichiometric_array = stoichiometric_matrix[measured_species_index_array,:];\n"
+  buffer *= "\n"
+  buffer *="\t# Convex species array -\n"
+  counter = 1
+  buffer *="\tconvex_species_index_array = [\n"
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+
+    # get species -
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_type == :metabolite && species_bound_type == :balanced)
+
+      buffer *="\t\t$(index)\t;\t# $(counter) $(species_symbol)\n"
+
+      # update -
+      counter = counter + 1
+
+    end
+  end
+  buffer *="\t];\n"
+  buffer *="\tconvex_stoichiometric_array = stoichiometric_matrix[convex_species_index_array,:];\n"
+  buffer *= "\n"
+
+  # write the IC vector -
+  counter = 1
+  buffer *= "\t# Convex initial condition array - \n"
+  buffer *="\tconvex_initial_condition_array = [\n"
+  for (index,species_object::SpeciesObject) in enumerate(list_of_species)
+
+    # get species -
+    species_bound_type::Symbol = species_object.species_bound_type
+    species_type::Symbol = species_object.species_type
+    species_symbol = species_object.species_symbol
+
+    if (species_type == :metabolite && species_bound_type == :balanced)
+
+      buffer *="\t\t0.0\t;\t# $(counter) $(species_symbol)\n"
+
+      # update -
+      counter = counter + 1
+
+    end
+  end
+  buffer *="\t];\n"
+  buffer *= "\n"
+
+  # setup pointers -
+
+
+  # return block -
+  buffer *= "\n"
+  buffer *= "\t# =============================== DO NOT EDIT BELOW THIS LINE ============================== #\n"
+  buffer *= "\tdata_dictionary = Dict{AbstractString,Any}()\n"
+  buffer *= "\tdata_dictionary[\"stoichiometric_matrix\"] = stoichiometric_matrix\n"
+  buffer *= "\tdata_dictionary[\"free_stoichiometric_array\"] = free_stoichiometric_array\n"
+  buffer *= "\tdata_dictionary[\"measured_stoichiometric_array\"] = measured_stoichiometric_array\n"
+  buffer *= "\tdata_dictionary[\"convex_stoichiometric_array\"] = convex_stoichiometric_array\n"
+  buffer *= "\tdata_dictionary[\"convex_initial_condition_array\"] = convex_initial_condition_array\n"
+  buffer *= "\n"
+  buffer *= "\tdata_dictionary[\"is_minimum_flag\"] = is_minimum_flag\n"
+  buffer *= "\t# =============================== DO NOT EDIT ABOVE THIS LINE ============================== #\n"
+  buffer *= "\treturn data_dictionary\n"
+  buffer *= "end\n"
 
   # build the component -
   program_component::ProgramComponent = ProgramComponent()
